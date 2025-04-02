@@ -11,9 +11,9 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 app = Flask(__name__)
 
 # Настройки подключения к Nessus
-NESSUS_URL = "https://ip:8834"#замінити
-USERNAME = "логін" #замінити
-PASSWORD = "пароль"#замінити
+NESSUS_URL = "https://your-nessus-server:8834"#замінити
+USERNAME = "your-username" #замінити
+PASSWORD = "your-password"#замінити
 
 def get_token():
     """Получаем токен авторизации от Nessus"""

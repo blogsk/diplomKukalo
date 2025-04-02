@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Список вразливостей</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+        h1 {
+            margin-top: 20px;
+        }
+        button {
+            display: block;
+            width: 250px;
+            margin: 10px auto;
+            padding: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            max-width: 800px;
+            margin: 20px auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            text-align: left;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Список вразливостей</h1>
+    
+    <button onclick="fetchVulnerabilities()">Загрузити вразливості</button>
+    <button onclick="showAICommands()">Показати команди від ШІ</button>
+
+    <div class="container">
+        <h2>🛑 Вразливості</h2>
+        <pre id="output">Тут буде відображатися інформація про вразливість...</pre>
+
+        <h2>⚙️ Команди від ШІ</h2>
+        <pre id="aiCommands">Тут будуть відображатись команди, запропоновані ШІ...</pre>
+    </div>
+
+    <script>
+        let vulnerabilitiesData = [];  // Глобальная переменная для хранения данных
+
+        function fetchVulnerabilities() {
+            fetch('/vulnerabilities')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Помилка серверу: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    vulnerabilitiesData = data.vulnerabilities || [];
+                    let output = "";
+
+                    if (vulnerabilitiesData.length > 0) {
+                        vulnerabilitiesData.forEach(vuln => {
+                            output += `🔴 Вразливість: ${vuln.plugin_name}\n`;
+                            output += `🔹 Рекомендація: ${vuln.recommendation || 'Рекомендація не вказана'}\n`;
+
+                            if (vuln.bash_commands) {
+                                for (const [os, commands] of Object.entries(vuln.bash_commands)) {
+                                    if (commands.length > 0) {
+                                        output += `💻 ${os.toUpperCase()}:\n`;
+                                        commands.forEach(cmd => {
+                                            output += `  $ ${cmd}\n`;
+                                        });
+                                    }
+                                }
+                            }
+                            output += `\n===========================\n`;
+                        });
+                    } else {
+                        output = "Немає вразливостей для відображення.";
+                    }
+
+                    document.getElementById("output").innerText = output;
+                })
+                .catch(error => {
+                    document.getElementById("output").innerText = "Ошибка: " + error.message;
+                });
+        }
+
+        function showAICommands() {
+            if (vulnerabilitiesData.length === 0) {
+                document.getElementById("aiCommands").innerText = "Спочатку загрузіть вразливості!";
+                return;
+            }
+
+            let aiOutput = "";
+            vulnerabilitiesData.forEach(vuln => {
+                aiOutput += `🔴 Вразливість: ${vuln.plugin_name}\n`;
+                aiOutput += `⚙️ Команди від ШІ:\n`;
+
+                if (vuln.recommendation) {
+                    const bashRegex = /```bash\s+([\s\S]*?)\s+```/g; // Регулярка для извлечения команд из ```bash ... ```
+                    let match;
+                    while ((match = bashRegex.exec(vuln.recommendation)) !== null) {
+                        aiOutput += `  ${match[1].trim()}\n`;
+                    }
+                } else {
+                    aiOutput += "Немає команд від ШІ\n";
+                }
+
+                aiOutput += `\n===========================\n`;
+            });
+
+            if (aiOutput === "") {
+                aiOutput = "ШІ не надав команди для цих уразливостей.";
+            }
+
+            document.getElementById("aiCommands").innerText = aiOutput;
+        }
+    </script>
+</body>
+</html>
+

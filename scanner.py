@@ -4,19 +4,19 @@ from flask import Flask, jsonify, render_template
 import requests
 from urllib3.exceptions import InsecureRequestWarning
 
-# Отключаем предупреждения SSL
+# Віключаємо попередження SSL
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
-# Настройки Flask
+# Налаштування Flask
 app = Flask(__name__)
 
-# Настройки подключения к Nessus
+# Налаштування подключення до Nessus
 NESSUS_URL = "https://your-nessus-server:8834"#замінити
 USERNAME = "your-username" #замінити
 PASSWORD = "your-password"#замінити
 
 def get_token():
-    """Получаем токен авторизации от Nessus"""
+    """Отримуємоо токен авторизації від Nessus"""
     auth_url = f"{NESSUS_URL}/session"
     auth_data = {"username": USERNAME, "password": PASSWORD}
     response = requests.post(auth_url, json=auth_data, verify=False)
@@ -26,7 +26,7 @@ def get_token():
     return None
 
 def get_latest_scan_id(token):
-    """Получаем ID последнего сканирования"""
+    """Отримуємо ID останнього сканування"""
     scans_url = f"{NESSUS_URL}/scans"
     headers = {"X-Cookie": f"token={token}", "Content-Type": "application/json"}
     response = requests.get(scans_url, headers=headers, verify=False)
@@ -39,7 +39,7 @@ def get_latest_scan_id(token):
     return None
 
 def get_vulnerabilities(token, scan_id):
-    """Получаем список уязвимостей для сканирования"""
+    """Отримуємо список вразливостей сканування"""
     vulns_url = f"{NESSUS_URL}/scans/{scan_id}"
     headers = {"X-Cookie": f"token={token}", "Content-Type": "application/json"}
     response = requests.get(vulns_url, headers=headers, verify=False)
@@ -49,7 +49,7 @@ def get_vulnerabilities(token, scan_id):
     return []
 
 def get_recommendation_for_vulnerability(vulnerability_description):
-    """Генерирует рекомендацию для устранения уязвимости с помощью g4f."""
+    """Генерує рекомендацію для усунення вразливості за допомогою g4f."""
     try:
         response = g4f.ChatCompletion.create(
             model="gpt-4",
@@ -71,13 +71,13 @@ def get_recommendation_for_vulnerability(vulnerability_description):
         return f"Помилка при запиті ШI: {str(e)}"
 
 def extract_bash_commands(description):
-    """Извлекает команды Bash из текста"""
+    """Витягує команди Bash із тексту"""
     bash_command_pattern = r"```bash\n(.*?)\n```"
     
-    # Найти все блоки `bash ...`
+    # Знайти всі блоки `bash ...`
     matches = re.findall(bash_command_pattern, description, re.DOTALL)
 
-    # Разделить по операционным системам
+    # Розділити по операційним системам
     bash_commands = {
         "debian/ubuntu": [],
         "centos/rhel": [],
@@ -91,7 +91,7 @@ def extract_bash_commands(description):
     for block in matches:
         commands = block.strip().split("\n")
 
-        # Определение системы по содержимому команд
+        # Визначення системи за вмістом команд
         if any("apt" in cmd for cmd in commands):
             bash_commands["debian/ubuntu"].extend(commands)
         elif any("yum" in cmd for cmd in commands):
